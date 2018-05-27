@@ -1,0 +1,141 @@
+<html>
+
+<head>
+<title>dragLine</title>
+</head>
+<link href="jquery-ui.css" rel="stylesheet">
+<style type="text/css">
+.dragLineBox{
+    min-width:20px;min-height:20px;position:absolute;cursor: move;
+}
+.dragLine_horizontal{
+    border-top:#000 solid 1px;width:100%;height:1px;margin:10px 0px;
+}
+.dragLine_vertical{
+    border-left:#000 solid 1px;width:1px;height:100%;margin:0px 10px;
+}
+.rotateTip{
+    border:red solid 1px;width:10px;height:10px;position:absolute;cursor:pointer;
+}
+</style>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="jquery-ui.js"></script>
+<script>
+$(function(){
+    var curBox = null;
+    var curLine = null;
+    var allLines = {};
+    $.draw = function(ope,param1,param2){
+        switch(ope){
+            case 'addLine':
+                var rotateTip = $('<div class="rotateTip"></div>');  //创建线旋转提示框
+                var dragLineBox = $('<div class="dragLineBox" direction="horizontal" loopid="'+param2+'"></div>');
+                var dragLine = $('<div class="dragLine_horizontal"></div>');
+                dragLineBox.append(dragLine);
+                param1.append(dragLineBox);
+                if (!$('.rotateTip')[0]) {
+                    param1.append(rotateTip);
+                }
+                rotateTip = $('.rotateTip');
+                //------线拖动----//
+                dragLineBox.draggable({                          
+                    containment: param1, scroll: false,
+                    drag: function( event, ui ) {
+                        curBox = dragLineBox;
+                        curLine = dragLine;
+                        if (curBox.attr('direction') == 'horizontal') {
+                            rotateTip.css('left',ui.position.left + dragLineBox.width()/2);
+                            rotateTip.css('top',ui.position.top - 10);
+                        }else{
+                            rotateTip.css('top',ui.position.top + curBox.height()/2);
+                            rotateTip.css('left',ui.position.left + 20);
+                        }
+                    }
+                });
+                //------线拉伸缩放----//
+                dragLineBox.resizable({
+                    handles: "e, w",
+                    resize: function( event, ui ) {
+                        rotateTip.css('left',ui.position.left + ui.size.width/2);
+                        rotateTip.css('top',ui.position.top - 10);
+                        curBox = dragLineBox;
+                        curLine = dragLine;
+                    }
+                });
+                rotateTip.unbind().click(function(){
+                    var x = curBox.offset().left;
+                    var y = curBox.offset().top;
+                    if (curBox.attr('direction') == 'horizontal') {
+                        var width = curLine.width();
+                        curBox.attr('direction','vertical');
+                        curBox.css('height',width);
+                        curBox.css('width','10px');
+                        curLine.removeClass('dragLine_horizontal').addClass('dragLine_vertical');
+
+                        rotateTip.css('top',y + width/2).css('left',x + 20)
+
+                        curBox.resizable({
+                            handles: "n, s",
+                            resize: function( event, ui ) {
+                                rotateTip.css('top',ui.position.top + ui.size.height/2);
+                                rotateTip.css('left',ui.position.left + 20);
+                                curBox = dragLineBox;
+                                curLine = dragLine;
+                            }
+                        });
+                    }else{
+                        var height = curLine.height();
+                        curBox.attr('direction','horizontal');
+                        curBox.css('width',height);
+                        curBox.css('height','10px');
+                        curLine.removeClass('dragLine_vertical').addClass('dragLine_horizontal');
+
+                        rotateTip.css('top',y-10).css('left',x+height/2);
+
+                        curBox.resizable({
+                            handles: "e, w",
+                            resize: function( event, ui ) {
+                                rotateTip.css('left',ui.position.left + ui.size.width/2);
+                                rotateTip.css('top',ui.position.top - 10);
+                                curBox = dragLineBox;
+                                curLine = dragLine;
+                            }
+                        });
+                    }
+                });
+                break;
+            case 'getLinesData':
+                var lines = $('.dragLineBox');
+                var allData = [];
+                lines.each(function(e){
+                    var lineData = {};
+                    lineData.left = $(this).offset().left;
+                    lineData.top = $(this).offset().top;
+                    lineData.width = $(this).width();
+                    lineData.height = $(this).height();
+                    lineData.loopid = $(this).attr('loopid');
+                    lineData.direction = $(this).attr('direction');
+                    allData.push(lineData);
+                });
+                return allData;
+                break;
+        }
+    }
+
+    $('#addLineBtn').click(function(){
+        $.draw('addLine',$('body'),'001');
+    });
+    $('#getDataBtn').click(function(){
+        var json = $.draw('getLinesData','001');
+        alert(JSON.stringify(json));
+    });
+    $.draw('addLine',$('body'),'001');
+});
+</script>
+<body>
+<p id="test"></p>
+<button id="addLineBtn">ADD LINE</button>
+<button id="getDataBtn">GET DATA</button>
+</body>
+
+</html>
